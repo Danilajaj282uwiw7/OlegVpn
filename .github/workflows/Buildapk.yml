@@ -1,0 +1,87 @@
+name: 🔨 Build OlegVPN APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:  # Ручной запуск!
+
+jobs:
+  build:
+    name: 📱 Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Flutter dependencies
+        run: |
+          flutter pub get
+          flutter doctor
+
+      - name: 🔨 Build APK (Debug)
+        run: flutter build apk --debug --target-platform android-arm64
+
+      - name: 🔨 Build APK (Release)
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: 📱 Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OlegVPN-Debug-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 30
+
+      - name: 📱 Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OlegVPN-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: 🏷️ Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-debug.apk
+          name: "🛡️ OlegVPN ${{ github.ref_name }}"
+          body: |
+            ## 🛡️ OlegVPN — Твой уютный VPN
+            
+            ### 🇷🇺 Сервер: Россия (Москва)
+            
+            **Что внутри:**
+            - 🔒 Безопасное подключение
+            - ⚡ Быстрый сервер в Москве
+            - 🎨 Красивый тёмный интерфейс
+            - 📊 Счётчик трафика и времени
+            
+            **Установка:**
+            1. Скачай APK
+            2. Разреши установку из неизвестных источников
+            3. Установи и нажми «Подключиться»
+            
+            **Скоро:** 🇰🇿 Казахстан, 🇹🇯 Таджикистан
+            
+            ---
+            *Made with ❤️ for Oleg*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
